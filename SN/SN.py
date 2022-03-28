@@ -1,7 +1,7 @@
 import math
 import numpy as np
-from ..Shapley import Shapley
-from ..DP import DP
+from ..Shapley.Shapley import mc_shap
+from ..DP.DP import OneD_DP, LapNoise
 
 #Backward part
 def cal_tau_i_coef(omega_i, lambda_i, tau_common_coef):
@@ -37,14 +37,26 @@ def cal_eps_from_tau(tau):
     eps = math.cos(1 / (tau * math.pi / 2) )
     return eps
 
-def cal_v(rho):
-    return math.log(1 + rho, math.e)
+def cal_chi(omega, tau, m, N):
+    numerator = np.zeors(m)
+    denominator = 0
+    for i in range(m):
+        numerator[i] = omega[i] * tau[i]
+        denominator += numerator[i]
+    chi = np.zeros(m)
+    denominator /= N
+    for i in range(m):
+        chi[i] = numerator[i] / denominator
+    return chi
 
-def cal_phi(chi, tau, acc, theta1, theta2, m):
+def cal_v(rho, attr):
+    return math.log(1 + rho * attr, math.e)
+
+def cal_phi(chi, tau, acc, theta1, theta2, m, rho1, rho2):
     sum = 0
     for i in range(m):
         sum += chi[i] * tau[i]
-    return theta1 * cal_v(sum) + theta2 * cal_v(acc)
+    return theta1 * cal_v(rho1, sum) + theta2 * cal_v(rho2, acc)
 
 def cal_Phi(chi, tau, acc, theta1, theta2, m, pM, qM):
     return cal_phi(chi, tau, acc, theta1, theta2, m) - pM * qM
@@ -63,5 +75,34 @@ def cal_Psi_i(pD, tau_i, chi_i, lambda_i):
     return pD * chi_i * tau_i - cal_seller_loss(tau_i, chi_i, lambda_i)
 
 #whole workflow
-def Stackelberg_Nash_DataMarket(omega):
+def Stackelberg_Nash_DataMarket(x_test, y_test,#data
+                                theta1, theta2, rho1, rho2, acc,#buyer
+                                sigma1, sigma2,#broker
+                                lambda_, omega, m, N, x_in, y_in):#seller
+                                #x_train is a 3D-list which contains m matrices
+                                #each matrices represents each seller's data
+    tau_coef = cal_tau_coef(omega, lambda_, N, m)
+    pM = cal_pM(theta1, rho1, lambda_, m, acc)
+    pD = pM * acc / 2
+    tau = tau_coef * pD
+    epss = np.zeros(m)
+    for i in range(m):
+        epss[i] = cal_eps_from_tau(tau)
+    chi = cal_chi(omega, tau, m, N)
+
+    #generate train data based on chi and epsilon
+    x_train = np.zeros((N, len(x_in[0][0])))
+    y_train = np.zeros(N)
+    idx = 0
+    for i in range(m):
+        for j in range(chi[i]):
+            x_train[idx] = OneD_DP(x_in[i][j], epss[i])
+            y_train[idx] = y_in[i][j] + LapNoise(epss[i])
+            idx += 1
+    """
+    TODO 
+    Train a model
+    """
+    
+    Phi = cal_Phi(chi, tau, acc, theta1, theta2, )
     return

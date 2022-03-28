@@ -9,7 +9,13 @@ def LapNoise(eps):
         noise = -beta * np.log(1.0 - rand2)
     return noise
 
-def DP(data, eps):
+def OneD_DP(data, eps):
     for i in data:
         i += LapNoise(eps)
+    return data
+
+def TwoDs_DP(data, eps):
+    for i in data:
+        for j in i:
+            j += LapNoise(eps)
     return data
