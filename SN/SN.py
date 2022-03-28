@@ -49,17 +49,27 @@ def cal_chi(omega, tau, m, N):
         chi[i] = numerator[i] / denominator
     return chi
 
+def cal_qD(chi, tau, m):
+    qD = 0
+    for i in range(m):
+        qD += chi[i] * tau[i]
+    return qD
+
+def cal_qM(chi, tau, m, acc):
+    qM = 0
+    for i in range(m):
+        qM += chi[i] * tau[i]
+    return qM * acc
+
 def cal_v(rho, attr):
     return math.log(1 + rho * attr, math.e)
 
 def cal_phi(chi, tau, acc, theta1, theta2, m, rho1, rho2):
-    sum = 0
-    for i in range(m):
-        sum += chi[i] * tau[i]
+    sum = cal_qD(chi, tau, m)
     return theta1 * cal_v(rho1, sum) + theta2 * cal_v(rho2, acc)
 
-def cal_Phi(chi, tau, acc, theta1, theta2, m, pM, qM):
-    return cal_phi(chi, tau, acc, theta1, theta2, m) - pM * qM
+def cal_Phi(chi, tau, acc, theta1, theta2, m, pM, qM, rho1, rho2):
+    return cal_phi(chi, tau, acc, theta1, theta2, m, rho1, rho2) - pM * qM
 
 def cal_traincost(chi, acc, sigma1, sigma2):
     sum = np.sum(chi)
@@ -74,7 +84,7 @@ def cal_seller_loss(tau, chi, lambda_):
 def cal_Psi_i(pD, tau_i, chi_i, lambda_i):
     return pD * chi_i * tau_i - cal_seller_loss(tau_i, chi_i, lambda_i)
 
-#whole workflow
+#main workflow
 def Stackelberg_Nash_DataMarket(x_test, y_test,#data
                                 theta1, theta2, rho1, rho2, acc,#buyer
                                 sigma1, sigma2,#broker
@@ -103,6 +113,17 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#data
     TODO 
     Train a model
     """
-    
-    Phi = cal_Phi(chi, tau, acc, theta1, theta2, )
-    return
+    model = None #TODO
+    true_acc = 0 #TODO from the model
+    qM = cal_qM(chi, tau, m, true_acc)
+    qD = cal_qD(chi, tau, m)
+    Phi = cal_Phi(chi, tau, true_acc, theta1, theta2, m, pM, qM)#buyer
+    Omega = cal_Omega(pM, qM, pD, qD, chi, true_acc, sigma1, sigma2)#broker
+    Psi = np.zeros(m)
+    for i in range(m):
+        Psi[i] = cal_Psi_i(pD, tau[i], chi[i], lambda_[i])
+    new_omega = mc_shap(x_train, y_train, x_test, y_test, model, 1000)
+    return Phi, Omega, Psi, new_omega
+    #return profits and refresh omega(weight)
+
+
