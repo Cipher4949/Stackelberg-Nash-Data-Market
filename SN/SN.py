@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from sklearn import metrics
 from ..Shapley.Shapley import mc_shap
 from ..DP.DP import OneD_DP, LapNoise
 
@@ -88,7 +89,8 @@ def cal_Psi_i(pD, tau_i, chi_i, lambda_i):
 def Stackelberg_Nash_DataMarket(x_test, y_test,#data
                                 theta1, theta2, rho1, rho2, acc,#buyer
                                 sigma1, sigma2,#broker
-                                lambda_, omega, m, N, x_in, y_in):#seller
+                                lambda_, omega, m, N, x_in, y_in,#seller
+                                model):
                                 #x_train is a 3D-list which contains m matrices
                                 #each matrices represents each seller's data
     tau_coef = cal_tau_coef(omega, lambda_, N, m)
@@ -109,15 +111,12 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#data
             x_train[idx] = OneD_DP(x_in[i][j], epss[i])
             y_train[idx] = y_in[i][j] + LapNoise(epss[i])
             idx += 1
-    """
-    TODO 
-    Train a model
-    """
-    model = None #TODO
-    true_acc = 0 #TODO from the model
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
+    true_acc = metrics.accuracy_score(y_test, y_pred, normalize=True)
     qM = cal_qM(chi, tau, m, true_acc)
     qD = cal_qD(chi, tau, m)
-    Phi = cal_Phi(chi, tau, true_acc, theta1, theta2, m, pM, qM)#buyer
+    Phi = cal_Phi(chi, tau, true_acc, theta1, theta2, m, pM, qM, rho1, rho2)#buyer
     Omega = cal_Omega(pM, qM, pD, qD, chi, true_acc, sigma1, sigma2)#broker
     Psi = np.zeros(m)
     for i in range(m):
