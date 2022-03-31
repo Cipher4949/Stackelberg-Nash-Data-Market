@@ -1,8 +1,11 @@
+import sys
+sys.path.append("..")
 import math
 import numpy as np
 from sklearn import metrics
-from ..Shapley.Shapley import mc_shap
-from ..DP.DP import OneD_DP, LapNoise
+from dynashap.dynamic import mc_shap
+from DP.DP import LapNoise, OneD_DP
+
 
 #Backward part
 def cal_tau_i_coef(omega_i, lambda_i, tau_common_coef):
