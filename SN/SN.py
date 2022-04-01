@@ -1,3 +1,4 @@
+from hashlib import new
 import sys
 sys.path.append("..")
 import math
@@ -124,7 +125,13 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#data
     Psi = np.zeros(m)
     for i in range(m):
         Psi[i] = cal_Psi_i(pD, tau[i], chi[i], lambda_[i])
-    new_omega = mc_shap(x_train, y_train, x_test, y_test, model, 1000)
+    data_shapley = mc_shap(x_train, y_train, x_test, y_test, model, 100)
+    new_omega = np.zeros(m)
+    idx = 0
+    for i in range(m):
+        for j in range(chi[i]):
+            new_omega[i] += data_shapley[idx]
+            idx += 1
     return Phi, Omega, Psi, new_omega
     #return profits and refresh omega(weight)
 
