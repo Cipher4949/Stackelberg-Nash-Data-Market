@@ -33,7 +33,8 @@ def eval_utility(x_train, y_train, x_test, y_test, model) -> float:
         model.fit(x_train, y_train)
         y_pred = model.predict(x_test)
 
-    return metrics.accuracy_score(y_test, y_pred, normalize=True)
+    #return metrics.accuracy_score(y_test, y_pred, normalize=True)
+    return metrics.r2_score(y_test, y_pred)
 
 
 def power_set(iterable) -> Iterator:

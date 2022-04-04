@@ -117,7 +117,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#data
             idx += 1
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
-    true_acc = metrics.accuracy_score(y_test, y_pred, normalize=True)
+    true_acc = metrics.r2_score(y_test, y_pred)
     qM = cal_qM(chi, tau, m, true_acc)
     qD = cal_qD(chi, tau, m)
     Phi = cal_Phi(chi, tau, true_acc, theta1, theta2, m, pM, qM, rho1, rho2)#buyer
