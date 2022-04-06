@@ -220,6 +220,26 @@ def preprocess_data(train_file_name, test_file_name):
 
     return x_train, y_train, x_test, y_test, columns_name
 
+def preprocess_data_forSN(train_file_name, test_file_name, seller_num, data_num):
+    train_df = pd.read_csv('./data_files/' + train_file_name)
+    test_df = pd.read_csv('./data_files/' + test_file_name)
+
+    x_train_nd = train_df.drop(columns=['Y']).values
+    x_test = test_df.drop(columns=['Y']).values
+    y_train_nd = train_df.Y.values
+    y_test = test_df.Y.values
+
+    x_in = np.zeros((seller_num, data_num, len(x_train_nd[0])))
+    y_in = np.zeros((seller_num, data_num))
+    
+    idx = 0
+    for i in range(seller_num):
+        for j in range(data_num):
+            x_in[i][j] = x_train_nd[idx]
+            y_in[i][j] = y_train_nd[idx]
+            idx += 1
+    
+    return x_in, y_in, x_test, y_test
 
 def variance(list1, list2):
     """

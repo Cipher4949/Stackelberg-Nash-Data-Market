@@ -1,7 +1,7 @@
 import numpy as np
 def LapNoise(eps):
     beta = 1 / eps
-    rand1 = np.random.randint()
+    rand1 = np.random.randint(1, 1000)
     rand2 = np.random.random()
     if (rand1 % 2) == 0:
         noise = beta * np.log(rand2)

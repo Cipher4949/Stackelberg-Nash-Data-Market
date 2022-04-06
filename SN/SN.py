@@ -10,7 +10,7 @@ from DP.DP import LapNoise, OneD_DP
 
 #Backward part
 def cal_tau_i_coef(omega_i, lambda_i, tau_common_coef):
-    tau_i_coef = tau_common_coef / math.sqrt(omega_i, lambda_i)
+    tau_i_coef = tau_common_coef / math.sqrt(omega_i * lambda_i)
     return tau_i_coef
 
 def cal_tau_coef(omega, lambda_, N, m):
@@ -43,7 +43,7 @@ def cal_eps_from_tau(tau):
     return eps
 
 def cal_chi(omega, tau, m, N):
-    numerator = np.zeors(m)
+    numerator = np.zeros(m)
     denominator = 0
     for i in range(m):
         numerator[i] = omega[i] * tau[i]
@@ -67,7 +67,7 @@ def cal_qM(chi, tau, m, acc):
     return qM * acc
 
 def cal_v(rho, attr):
-    return math.log(1 + rho * attr, math.e)
+    return math.log(1 + rho * attr)
 
 def cal_phi(chi, tau, acc, theta1, theta2, m, rho1, rho2):
     sum = cal_qD(chi, tau, m)
@@ -90,7 +90,7 @@ def cal_Psi_i(pD, tau_i, chi_i, lambda_i):
     return pD * chi_i * tau_i - cal_seller_loss(tau_i, chi_i, lambda_i)
 
 #main workflow
-def Stackelberg_Nash_DataMarket(x_test, y_test,#data
+def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
                                 theta1, theta2, rho1, rho2, acc,#buyer
                                 sigma1, sigma2,#broker
                                 lambda_, omega, m, N, x_in, y_in,#seller
@@ -103,7 +103,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#data
     tau = tau_coef * pD
     epss = np.zeros(m)
     for i in range(m):
-        epss[i] = cal_eps_from_tau(tau)
+        epss[i] = cal_eps_from_tau(tau[i])
     chi = cal_chi(omega, tau, m, N)
 
     #generate train data based on chi and epsilon
@@ -111,13 +111,13 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#data
     y_train = np.zeros(N)
     idx = 0
     for i in range(m):
-        for j in range(chi[i]):
+        for j in range(int(chi[i])):
             x_train[idx] = OneD_DP(x_in[i][j], epss[i])
             y_train[idx] = y_in[i][j] + LapNoise(epss[i])
             idx += 1
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
-    true_acc = metrics.r2_score(y_test, y_pred)
+    true_acc = metrics.explained_variance_score(y_test, y_pred)
     qM = cal_qM(chi, tau, m, true_acc)
     qD = cal_qD(chi, tau, m)
     Phi = cal_Phi(chi, tau, true_acc, theta1, theta2, m, pM, qM, rho1, rho2)#buyer
@@ -126,13 +126,16 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#data
     for i in range(m):
         Psi[i] = cal_Psi_i(pD, tau[i], chi[i], lambda_[i])
     data_shapley = mc_shap(x_train, y_train, x_test, y_test, model, 100)
+    min_data_shapley = np.min(data_shapley) - 0.00001
     new_omega = np.zeros(m)
     idx = 0
     for i in range(m):
-        for j in range(chi[i]):
-            new_omega[i] += data_shapley[idx]
+        for j in range(int(chi[i])):
+            new_omega[i] += data_shapley[idx] - min_data_shapley
             idx += 1
+    max_seller_shapley = np.max(new_omega)
+    for i in range(m):
+        new_omega[i] /= max_seller_shapley
+    print(new_omega)
     return Phi, Omega, Psi, new_omega
     #return profits and refresh omega(weight)
-
-
