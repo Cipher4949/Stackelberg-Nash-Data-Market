@@ -71,6 +71,7 @@ def cal_v(rho, attr):
 
 def cal_phi(chi, tau, score, theta, m, rho):
     sum = cal_qD(chi, tau, m)
+    print(sum, score)
     return theta[1] * cal_v(rho[1], sum) + theta[2] * cal_v(rho[2], score)
 
 def cal_Phi(chi, tau, score, theta, m, pM, qM, rho):
@@ -120,7 +121,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
             idx += 1
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
-    true_score = metrics.explained_variance_score(y_test, y_pred)
+    true_score = 1 / (1 - metrics.r2_score(y_test, y_pred))
     qM = cal_qM(chi, tau, m, true_score)
     qD = cal_qD(chi, tau, m)
     Phi = cal_Phi(chi, tau, true_score, theta, m, pM, qM, rho)#buyer
