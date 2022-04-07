@@ -23,12 +23,12 @@ def cal_tau_coef(omega, lambda_, N, m):
         tau_coef[i] = cal_tau_i_coef(omega[i], lambda_[i], tau_common_coef)
     return tau_coef
 
-def cal_pM(theta1, rho1, lambda_, m, acc):
+def cal_pM(theta, rho, lambda_, m, score):
     lambda_reciprocal_sum = 0
     for i in range(m):
         lambda_reciprocal_sum += 1 / lambda_[i]
-    cons_C = rho1 * acc / 4 * lambda_reciprocal_sum
-    cons_D = acc * acc / 2 / theta1 * lambda_reciprocal_sum
+    cons_C = rho[1] * score / 4 * lambda_reciprocal_sum
+    cons_D = score * score / 2 / theta[1] * lambda_reciprocal_sum
     pM = (-cons_D + math.sqrt(cons_D * cons_D + 4 * cons_C *cons_D)) / (2 * cons_C * cons_D)
     return pM
 
@@ -60,28 +60,31 @@ def cal_qD(chi, tau, m):
         qD += chi[i] * tau[i]
     return qD
 
-def cal_qM(chi, tau, m, acc):
+def cal_qM(chi, tau, m, score):
     qM = 0
     for i in range(m):
         qM += chi[i] * tau[i]
-    return qM * acc
+    return qM * score
 
 def cal_v(rho, attr):
     return math.log(1 + rho * attr)
 
-def cal_phi(chi, tau, acc, theta1, theta2, m, rho1, rho2):
+def cal_phi(chi, tau, score, theta, m, rho):
     sum = cal_qD(chi, tau, m)
-    return theta1 * cal_v(rho1, sum) + theta2 * cal_v(rho2, acc)
+    return theta[1] * cal_v(rho[1], sum) + theta[2] * cal_v(rho[2], score)
 
-def cal_Phi(chi, tau, acc, theta1, theta2, m, pM, qM, rho1, rho2):
-    return cal_phi(chi, tau, acc, theta1, theta2, m, rho1, rho2) - pM * qM
+def cal_Phi(chi, tau, score, theta, m, pM, qM, rho):
+    return cal_phi(chi, tau, score, theta, m, rho) - pM * qM
 
-def cal_traincost(chi, acc, sigma1, sigma2):
-    sum = np.sum(chi)
-    return sigma1 * sum**2 + sigma2 * acc**2
+def cal_traincost(N, score, sigma):
+    traincost = sigma[0][0] + sigma[1][0] * math.log(N) + sigma[2][0] * math.log(score) + \
+        0.5 * sigma[1][1] * math.log(N)**2 + 0.5 *sigma[2][2] * math.log(score)**2 + \
+            sigma[3][0] * math.log(N) * math.log(score)
+    traincost = math.exp(traincost)
+    return traincost
 
-def cal_Omega(pM, qM, pD, qD, chi, acc, sigma1, sigma2):
-    return pM * qM - pD * qD - cal_traincost(chi, acc, sigma1, sigma2)
+def cal_Omega(pM, qM, pD, qD, N, score, sigma):
+    return pM * qM - pD * qD - cal_traincost(N, score, sigma)
 
 def cal_seller_loss(tau, chi, lambda_):
     return lambda_ * (tau * chi)**2
@@ -91,15 +94,15 @@ def cal_Psi_i(pD, tau_i, chi_i, lambda_i):
 
 #main workflow
 def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
-                                theta1, theta2, rho1, rho2, acc,#buyer
-                                sigma1, sigma2,#broker
+                                theta, rho, score,#buyer
+                                sigma,#broker
                                 lambda_, omega, m, N, x_in, y_in,#seller
                                 model):
                                 #x_train is a 3D-list which contains m matrices
                                 #each matrices represents each seller's data
     tau_coef = cal_tau_coef(omega, lambda_, N, m)
-    pM = cal_pM(theta1, rho1, lambda_, m, acc)
-    pD = pM * acc / 2
+    pM = cal_pM(theta, rho, lambda_, m, score)
+    pD = pM * score / 2
     tau = tau_coef * pD
     epss = np.zeros(m)
     for i in range(m):
@@ -117,11 +120,11 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
             idx += 1
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
-    true_acc = metrics.explained_variance_score(y_test, y_pred)
-    qM = cal_qM(chi, tau, m, true_acc)
+    true_score = metrics.explained_variance_score(y_test, y_pred)
+    qM = cal_qM(chi, tau, m, true_score)
     qD = cal_qD(chi, tau, m)
-    Phi = cal_Phi(chi, tau, true_acc, theta1, theta2, m, pM, qM, rho1, rho2)#buyer
-    Omega = cal_Omega(pM, qM, pD, qD, chi, true_acc, sigma1, sigma2)#broker
+    Phi = cal_Phi(chi, tau, true_score, theta, m, pM, qM, rho)#buyer
+    Omega = cal_Omega(pM, qM, pD, qD, N, true_score, sigma)#broker
     Psi = np.zeros(m)
     for i in range(m):
         Psi[i] = cal_Psi_i(pD, tau[i], chi[i], lambda_[i])
@@ -133,9 +136,9 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
         for j in range(int(chi[i])):
             new_omega[i] += data_shapley[idx] - min_data_shapley
             idx += 1
+        new_omega[i] /= int(chi[i])
     max_seller_shapley = np.max(new_omega)
     for i in range(m):
         new_omega[i] /= max_seller_shapley
-    print(new_omega)
     return Phi, Omega, Psi, new_omega
     #return profits and refresh omega(weight)
