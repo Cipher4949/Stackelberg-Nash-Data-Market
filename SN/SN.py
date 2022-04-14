@@ -6,6 +6,7 @@ import numpy as np
 from sklearn import metrics
 from dynashap.dynamic import mc_shap
 from DP.DP import LapNoise, OneD_DP
+from dynashap.utils import cut_r2_score
 
 
 #Backward part
@@ -71,7 +72,6 @@ def cal_v(rho, attr):
 
 def cal_phi(chi, tau, score, theta, m, rho):
     sum = cal_qD(chi, tau, m)
-    print(sum, score)
     return theta[1] * cal_v(rho[1], sum) + theta[2] * cal_v(rho[2], score)
 
 def cal_Phi(chi, tau, score, theta, m, pM, qM, rho):
@@ -98,7 +98,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
                                 theta, rho, score,#buyer
                                 sigma,#broker
                                 lambda_, omega, m, N, x_in, y_in,#seller
-                                model):
+                                model, omega_rate):
                                 #x_train is a 3D-list which contains m matrices
                                 #each matrices represents each seller's data
     tau_coef = cal_tau_coef(omega, lambda_, N, m)
@@ -121,7 +121,10 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
             idx += 1
     model.fit(x_train, y_train)
     y_pred = model.predict(x_test)
-    true_score = 1 / (1 - metrics.r2_score(y_test, y_pred))
+    #true_score = 1.0 / (1.0 - metrics.r2_score(y_test, y_pred))
+    true_score = cut_r2_score(y_test, y_pred)
+    if true_score < 0:
+        true_score = 0
     qM = cal_qM(chi, tau, m, true_score)
     qD = cal_qD(chi, tau, m)
     Phi = cal_Phi(chi, tau, true_score, theta, m, pM, qM, rho)#buyer
@@ -130,7 +133,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     for i in range(m):
         Psi[i] = cal_Psi_i(pD, tau[i], chi[i], lambda_[i])
     data_shapley = mc_shap(x_train, y_train, x_test, y_test, model, 100)
-    min_data_shapley = np.min(data_shapley) - 0.00001
+    min_data_shapley = np.min(data_shapley)
     new_omega = np.zeros(m)
     idx = 0
     for i in range(m):
@@ -141,5 +144,6 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     max_seller_shapley = np.max(new_omega)
     for i in range(m):
         new_omega[i] /= max_seller_shapley
-    return Phi, Omega, Psi, new_omega
+        new_omega[i] = new_omega[i] * omega_rate + omega[i] * (1 - omega_rate)
+    return Phi, Omega, Psi, new_omega, pD, pM, tau, true_score
     #return profits and refresh omega(weight)

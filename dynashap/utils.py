@@ -19,6 +19,12 @@ from typing import Iterator
 
 from .exceptions import ParamError
 
+def cut_r2_score(test, pred):
+    score = metrics.r2_score(test, pred)
+    if score > 0:
+        return score
+    else:
+        return np.finfo(float).tiny
 
 def eval_utility(x_train, y_train, x_test, y_test, model) -> float:
     """Evaluate the coalition utility.
@@ -34,7 +40,7 @@ def eval_utility(x_train, y_train, x_test, y_test, model) -> float:
         y_pred = model.predict(x_test)
 
     #return metrics.accuracy_score(y_test, y_pred, normalize=True)
-    return metrics.r2_score(y_test, y_pred)
+    return cut_r2_score(y_test, y_pred)
 
 
 def power_set(iterable) -> Iterator:
