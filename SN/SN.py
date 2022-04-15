@@ -71,8 +71,8 @@ def cal_v(rho, attr):
     return math.log(1 + rho * attr)
 
 def cal_phi(chi, tau, score, theta, m, rho):
-    sum = cal_qD(chi, tau, m)
-    return theta[1] * cal_v(rho[1], sum) + theta[2] * cal_v(rho[2], score)
+    qD = cal_qD(chi, tau, m)
+    return theta[1] * cal_v(rho[1], qD) + theta[2] * cal_v(rho[2], score)
 
 def cal_Phi(chi, tau, score, theta, m, pM, qM, rho):
     return cal_phi(chi, tau, score, theta, m, rho) - pM * qM
@@ -137,10 +137,13 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     new_omega = np.zeros(m)
     idx = 0
     for i in range(m):
-        for j in range(int(chi[i])):
-            new_omega[i] += data_shapley[idx] - min_data_shapley
-            idx += 1
-        new_omega[i] /= int(chi[i])
+        if int(chi[i]) > 0:
+            for j in range(int(chi[i])):
+                new_omega[i] += data_shapley[idx] - min_data_shapley
+                idx += 1
+            new_omega[i] /= int(chi[i])
+        else:
+            new_omega[i] = omega[i]
     max_seller_shapley = np.max(new_omega)
     for i in range(m):
         new_omega[i] /= max_seller_shapley
