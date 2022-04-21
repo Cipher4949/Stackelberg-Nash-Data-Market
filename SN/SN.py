@@ -40,7 +40,7 @@ def cal_tau_from_eps(eps):
     return tau
 
 def cal_eps_from_tau(tau):
-    eps = math.cos(1 / (tau * math.pi / 2) )
+    eps = 1 / math.cos((tau * math.pi / 2) )
     return eps
 
 def cal_chi(omega, tau, m, N):
