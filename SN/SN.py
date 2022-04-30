@@ -137,6 +137,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     new_omega = np.zeros(m)
     idx = 0
     for i in range(m):
+        """
         if int(chi[i]) > 0:
             for j in range(int(chi[i])):
                 new_omega[i] += data_shapley[idx] - min_data_shapley
@@ -144,6 +145,10 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
             new_omega[i] /= int(chi[i])
         else:
             new_omega[i] = omega[i]
+        """
+        for j in range(int(chi[i])):
+            new_omega[i] += data_shapley[idx] - min_data_shapley
+            idx += 1
     max_seller_shapley = np.max(new_omega)
     for i in range(m):
         new_omega[i] /= max_seller_shapley
