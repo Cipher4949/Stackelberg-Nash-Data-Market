@@ -220,8 +220,16 @@ def inner_compare_Market(x_test, y_test,#test_data
         epss[i] = cal_eps_from_tau(tau[i])
     chi = np.ones(m)
     if compare_ob == 'random':
-        for i in range(m):
-            chi[i] = random.random()
+        res_N = N
+        sig = 1
+        for i in range(m - 1):
+            mu = res_N / (m - i)
+            now = -1
+            while now < 0 or res_N - now < 0:
+                now = random.normalvariate(mu, sig)
+            chi[i] = now
+            res_N -= now
+        chi[m - 1] = res_N
 
     #generate train data based on chi and epsilon
     x_train = np.zeros((N, len(x_in[0][0])))
@@ -256,5 +264,5 @@ def inner_compare_Market(x_test, y_test,#test_data
     for i in range(m):
         new_omega[i] /= max_seller_shapley
         new_omega[i] = new_omega[i] * omega_rate + omega[i] * (1 - omega_rate)
-    return Phi, Omega, Psi, new_omega, true_score
+    return Phi, Omega, Psi, new_omega, pD, pM, tau, true_score
     #return profits and refresh omega(weight)
