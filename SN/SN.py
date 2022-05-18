@@ -99,7 +99,8 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
                                 theta, rho, score,#buyer
                                 sigma,#broker
                                 lambda_, omega, m, N, x_in, y_in,#seller
-                                model, omega_rate):
+                                model, omega_rate,
+                                test_flag = True):
                                 #x_train is a 3D-list which contains m matrices
                                 #each matrices represents each seller's data
     tau_coef = cal_tau_coef(omega, lambda_, N, m)
@@ -137,25 +138,28 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     data_shapley = mc_shap(x_train, y_train, x_test, y_test, model, 100)
     min_data_shapley = np.min(data_shapley)
     new_omega = np.zeros(m)
-    idx = 0
-    for i in range(m):
-        """
-        if int(chi[i]) > 0:
+    if test_flag:
+        new_omega = omega
+    else:
+        idx = 0
+        for i in range(m):
+            """
+            if int(chi[i]) > 0:
+                for j in range(int(chi[i])):
+                    new_omega[i] += data_shapley[idx] - min_data_shapley
+                    idx += 1
+                new_omega[i] /= int(chi[i])
+            else:
+                new_omega[i] = omega[i]
+            """
             for j in range(int(chi[i])):
                 new_omega[i] += data_shapley[idx] - min_data_shapley
                 idx += 1
-            new_omega[i] /= int(chi[i])
-        else:
-            new_omega[i] = omega[i]
-        """
-        for j in range(int(chi[i])):
-            new_omega[i] += data_shapley[idx] - min_data_shapley
-            idx += 1
-    max_seller_shapley = np.max(new_omega)
-    for i in range(m):
-        new_omega[i] /= max_seller_shapley
-        new_omega[i] = new_omega[i] * omega_rate + omega[i] * (1 - omega_rate)
-    cost=cal_traincost(N, score, sigma)
+        max_seller_shapley = np.max(new_omega)
+        for i in range(m):
+            new_omega[i] /= max_seller_shapley
+            new_omega[i] = new_omega[i] * omega_rate + omega[i] * (1 - omega_rate)
+    #cost=cal_traincost(N, score, sigma)
     return Phi, Omega, Psi, new_omega, pD, pM, tau, true_score
     #return profits and refresh omega(weight)
 
