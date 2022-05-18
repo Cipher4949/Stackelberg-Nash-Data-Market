@@ -159,7 +159,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
         for i in range(m):
             new_omega[i] /= max_seller_shapley
             new_omega[i] = new_omega[i] * omega_rate + omega[i] * (1 - omega_rate)
-    #cost=cal_traincost(N, score, sigma)
+    cost=cal_traincost(N, score, sigma)
     return Phi, Omega, Psi, new_omega, pD, pM, tau, true_score
     #return profits and refresh omega(weight)
 
