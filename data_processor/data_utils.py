@@ -238,7 +238,7 @@ def preprocess_data_forSN(train_file_name, test_file_name, seller_num, data_num)
             x_in[i][j] = x_train_nd[idx]
             y_in[i][j] = y_train_nd[idx]
             idx += 1
-    
+            
     return x_in, y_in, x_test, y_test
 
 def variance(list1, list2):
