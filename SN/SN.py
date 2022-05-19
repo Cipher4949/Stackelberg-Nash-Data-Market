@@ -135,12 +135,12 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     Psi = np.zeros(m)
     for i in range(m):
         Psi[i] = cal_Psi_i(pD, tau[i], chi[i], lambda_[i])
-    data_shapley = mc_shap(x_train, y_train, x_test, y_test, model, 100)
-    min_data_shapley = np.min(data_shapley)
     new_omega = np.zeros(m)
     if test_flag:
         new_omega = omega
     else:
+        data_shapley = mc_shap(x_train, y_train, x_test, y_test, model, 100)
+        min_data_shapley = np.min(data_shapley)
         idx = 0
         for i in range(m):
             """
