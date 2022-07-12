@@ -125,8 +125,6 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     y_pred = model.predict(x_test)
     #true_score = 1.0 / (1.0 - metrics.r2_score(y_test, y_pred))
     true_score = cut_r2_score(y_test, y_pred)
-    if true_score < 0:
-        true_score = 0
   
     qM = cal_qM(chi, tau, m, true_score)
     qD = cal_qD(chi, tau, m)
@@ -159,7 +157,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
         for i in range(m):
             new_omega[i] /= max_seller_shapley
             new_omega[i] = new_omega[i] * omega_rate + omega[i] * (1 - omega_rate)
-    cost=cal_traincost(N, score, sigma)
+    #cost=cal_traincost(N, score, sigma)
     return Phi, Omega, Psi, new_omega, pD, pM, tau, true_score
     #return profits and refresh omega(weight)
 
@@ -381,4 +379,46 @@ def inner_compare_Market(x_test, y_test,#test_data
         new_omega[i] = new_omega[i] * omega_rate + omega[i] * (1 - omega_rate)
     return Phi, Omega, Psi, new_omega, pD, pM, tau, true_score
     #return profits and refresh omega(weight)
+
+
+def fake_parameter_DataMarket(x_test, y_test,#test_data
+                                theta, rho, score,#buyer
+                                sigma,#broker
+                                lambda_, omega, m, N, x_in, y_in,#seller
+                                model,
+                                true_rho):
+                                #x_train is a 3D-list which contains m matrices
+                                #each matrices represents each seller's data
+    tau_coef = cal_tau_coef(omega, lambda_, N, m)
+    pM = cal_pM(theta, rho, lambda_, m, score)
+    pD = pM * score / 2
+    tau = tau_coef * pD
+    epss = np.zeros(m)
+    for i in range(m):
+        epss[i] = cal_eps_from_tau(tau[i])
+    chi = cal_chi(omega, tau, m, N)
+
+    #generate train data based on chi and epsilon
+    x_train = np.zeros((N, len(x_in[0][0])))
+    y_train = np.zeros(N)
+    idx = 0
+    for i in range(m):
+        for j in range(int(chi[i])):
+            x_train[idx] = OneD_DP(x_in[i][j], epss[i])
+            y_train[idx] = y_in[i][j] + LapNoise(epss[i])
+            idx += 1
+    model.fit(x_train, y_train)
+    y_pred = model.predict(x_test)
+    #true_score = 1.0 / (1.0 - metrics.r2_score(y_test, y_pred))
+    true_score = cut_r2_score(y_test, y_pred)  
+    qM = cal_qM(chi, tau, m, true_score)
+    qD = cal_qD(chi, tau, m)
+    Phi = cal_Phi(chi, tau, true_score, theta, m, pM, qM, true_rho)#buyer
+    Omega = cal_Omega(pM, qM, pD, qD, N, true_score, sigma)#broker
+    Psi = np.zeros(m)
+    for i in range(m):
+        Psi[i] = cal_Psi_i(pD, tau[i], chi[i], lambda_[i])
+    return Phi, Omega, Psi, pD, pM, tau, true_score
+    #return profits and refresh omega(weight)
+
 
