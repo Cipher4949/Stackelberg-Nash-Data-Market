@@ -36,12 +36,12 @@ def cal_pM(theta, rho, lambda_, m, score):
 
 
 #Forward part
-def cal_tau_from_eps(eps):
-    tau = 2 * math.acos(1 / (eps + 1) ) / math.pi
+def cal_tau_from_eps(eps, sv):
+    tau = 2 * math.acos(1 / (eps * sv + 1) ) / math.pi
     return tau
 
-def cal_eps_from_tau(tau):
-    eps = 1 / math.cos((tau * math.pi / 2) )
+def cal_eps_from_tau(tau, sv):
+    eps = 1 / math.cos((tau * math.pi / 2) ) / sv
     return eps
 
 def cal_chi(omega, tau, m, N):
@@ -98,7 +98,7 @@ def cal_Psi_i(pD, tau_i, chi_i, lambda_i):
 def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
                                 theta, rho, score,#buyer
                                 sigma,#broker
-                                lambda_, omega, m, N, x_in, y_in,#seller
+                                lambda_, omega, m, N, x_in, y_in, sv,#seller
                                 model, omega_rate,
                                 test_flag = True):
                                 #x_train is a 3D-list which contains m matrices
@@ -109,7 +109,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
     tau = tau_coef * pD
     epss = np.zeros(m)
     for i in range(m):
-        epss[i] = cal_eps_from_tau(tau[i])
+        epss[i] = cal_eps_from_tau(tau[i], sv[i])
     chi = cal_chi(omega, tau, m, N)
 
     #generate train data based on chi and epsilon
@@ -165,7 +165,7 @@ def Stackelberg_Nash_DataMarket(x_test, y_test,#test_data
 def No_Game_Market_pM(x_test, y_test,#test_data
                     theta, rho, score,#buyer
                     sigma,#broker
-                    lambda_, omega, m, N, x_in, y_in,#seller
+                    lambda_, omega, m, N, x_in, y_in, sv,#seller
                     model, omega_rate,
                     pM):#strategy
     tau_coef = cal_tau_coef(omega, lambda_, N, m)
@@ -175,7 +175,7 @@ def No_Game_Market_pM(x_test, y_test,#test_data
     
     epss = np.zeros(m)
     for i in range(m):
-        epss[i] = cal_eps_from_tau(tau[i])
+        epss[i] = cal_eps_from_tau(tau[i], sv[i])
     chi = cal_chi(omega, tau, m, N)
 
     #generate train data based on chi and epsilon
@@ -217,7 +217,7 @@ def No_Game_Market_pM(x_test, y_test,#test_data
 def No_Game_Market_pD(x_test, y_test,#test_data
                     theta, rho, score,#buyer
                     sigma,#broker
-                    lambda_, omega, m, N, x_in, y_in,#seller
+                    lambda_, omega, m, N, x_in, y_in, sv,#seller
                     model, omega_rate,
                     pD):#strategy
     tau_coef = cal_tau_coef(omega, lambda_, N, m)
@@ -227,7 +227,7 @@ def No_Game_Market_pD(x_test, y_test,#test_data
     
     epss = np.zeros(m)
     for i in range(m):
-        epss[i] = cal_eps_from_tau(tau[i])
+        epss[i] = cal_eps_from_tau(tau[i], sv[i])
     chi = cal_chi(omega, tau, m, N)
 
     #generate train data based on chi and epsilon
@@ -269,7 +269,7 @@ def No_Game_Market_pD(x_test, y_test,#test_data
 def No_Game_Market_tau(x_test, y_test,#test_data
                     theta, rho, score,#buyer
                     sigma,#broker
-                    lambda_, omega, m, N, x_in, y_in,#seller
+                    lambda_, omega, m, N, x_in, y_in, sv,#seller
                     model, omega_rate,
                     tau):#strategy
     #tau_coef = cal_tau_coef(omega, lambda_, N, m)
@@ -279,7 +279,7 @@ def No_Game_Market_tau(x_test, y_test,#test_data
     
     epss = np.zeros(m)
     for i in range(m):
-        epss[i] = cal_eps_from_tau(tau[i])
+        epss[i] = cal_eps_from_tau(tau[i], sv[i])
     chi = cal_chi(omega, tau, m, N)
 
     #generate train data based on chi and epsilon
@@ -321,7 +321,7 @@ def No_Game_Market_tau(x_test, y_test,#test_data
 def inner_compare_Market(x_test, y_test,#test_data
                     theta, rho, score,#buyer
                     sigma,#broker
-                    lambda_, omega, m, N, x_in, y_in,#seller
+                    lambda_, omega, m, N, x_in, y_in, sv,#seller
                     model, omega_rate,
                     compare_ob = 'average'):
     tau_coef = cal_tau_coef(omega, lambda_, N, m)
@@ -330,7 +330,7 @@ def inner_compare_Market(x_test, y_test,#test_data
     tau = tau_coef * pD
     epss = np.zeros(m)
     for i in range(m):
-        epss[i] = cal_eps_from_tau(tau[i])
+        epss[i] = cal_eps_from_tau(tau[i], sv[i])
     chi = np.ones(m)
     if compare_ob == 'random':
         res_N = N
@@ -384,7 +384,7 @@ def inner_compare_Market(x_test, y_test,#test_data
 def fake_parameter_DataMarket(x_test, y_test,#test_data
                                 theta, rho, score,#buyer
                                 sigma,#broker
-                                lambda_, omega, m, N, x_in, y_in,#seller
+                                lambda_, omega, m, N, x_in, y_in, sv,#seller
                                 model,
                                 true_rho):
                                 #x_train is a 3D-list which contains m matrices
@@ -395,7 +395,7 @@ def fake_parameter_DataMarket(x_test, y_test,#test_data
     tau = tau_coef * pD
     epss = np.zeros(m)
     for i in range(m):
-        epss[i] = cal_eps_from_tau(tau[i])
+        epss[i] = cal_eps_from_tau(tau[i], sv[i])
     chi = cal_chi(omega, tau, m, N)
 
     #generate train data based on chi and epsilon
