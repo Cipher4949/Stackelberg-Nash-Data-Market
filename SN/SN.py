@@ -421,4 +421,22 @@ def fake_parameter_DataMarket(x_test, y_test,#test_data
     return Phi, Omega, Psi, pD, pM, tau, true_score
     #return profits and refresh omega(weight)
 
-
+def social_optimal(theta, rho, score,#buyer
+                    sigma,#broker
+                    lambda_, omega, m, N#seller
+                    ):
+    def obj(tau):
+        chi = cal_chi(omega, tau, m, N)
+        res = cal_phi(chi, tau, score, theta, m, rho) 
+        for i in range(m):
+            res -= cal_seller_loss(tau[i], chi[i], lambda_[i])
+        return -res
+    initial_guess = np.ones(m)
+    def constraint_function(x):
+        return np.concatenate((x, 1 - x))  # 在约束条件中加入各个变量和它们与1的差值
+    result = minimize(obj, initial_guess, method='SLSQP', constraints={'type': 'ineq', 'fun': constraint_function})
+    tau = result.x
+    chi = cal_chi(omega, tau, m, N)
+    welfare = cal_welfare(chi, tau, score, theta, m, rho, N, sigma, lambda_)
+    qM = cal_qM(chi, tau, m, score)
+    return welfare, qM, tau
